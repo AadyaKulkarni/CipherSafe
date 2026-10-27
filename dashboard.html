@@ -1,0 +1,413 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CipherSafe | Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- ================================
+             HEADER
+        ================================= -->
+
+        <header class="dashboard-header">
+
+            <div class="brand">
+
+                <div class="brand-icon">
+                    🔐
+                </div>
+
+                <div>
+                    <h1>CipherSafe</h1>
+                    <p>Secure. Encrypt. Protect.</p>
+                </div>
+
+            </div>
+
+            <button
+                class="logout-btn"
+                onclick="logout()">
+
+                Logout
+
+            </button>
+
+        </header>
+
+
+        <!-- ================================
+             WELCOME SECTION
+        ================================= -->
+
+        <section class="welcome">
+
+            <p class="small-title">
+                SECURE DATA PLATFORM
+            </p>
+
+            <h2>
+                Welcome,
+                <span id="usernameDisplay">User</span>!
+            </h2>
+
+            <p>
+                Protect your sensitive files and messages
+                using cryptography.
+            </p>
+
+        </section>
+
+
+        <!-- ================================
+             ALL FOUR OPTIONS
+        ================================= -->
+
+        <section class="security-options">
+
+
+            <!-- ============================
+                 CARD 1 - SECURE FILE
+            ============================= -->
+
+            <div class="security-card">
+
+                <div class="card-icon">
+                    📁
+                </div>
+
+                <h3>
+                    Secure File
+                </h3>
+
+                <p>
+                    Encrypt and protect your important
+                    files from unauthorized access.
+                </p>
+
+                <button
+                    class="action-btn"
+                    onclick="secureFile()">
+
+                    Secure a File
+
+                </button>
+
+            </div>
+
+
+            <!-- ============================
+                 CARD 2 - SECURE MESSAGE
+            ============================= -->
+
+            <div class="security-card">
+
+                <div class="card-icon">
+                    💬
+                </div>
+
+                <h3>
+                    Secure Message
+                </h3>
+
+                <p>
+                    Encrypt confidential messages before
+                    storing or sharing them securely.
+                </p>
+
+                <button
+                    class="action-btn"
+                    onclick="secureMessage()">
+
+                    Secure a Message
+
+                </button>
+
+            </div>
+
+
+            <!-- ============================
+                 CARD 3 - DECRYPT MESSAGE
+            ============================= -->
+
+            <div class="security-card">
+
+                <div class="card-icon">
+                    🔓
+                </div>
+
+                <h3>
+                    Decrypt Message
+                </h3>
+
+                <p>
+                    Recover your original message using
+                    the correct decryption password.
+                </p>
+
+                <button
+                    class="action-btn"
+                    onclick="decryptMessagePage()">
+
+                    Decrypt Message
+
+                </button>
+
+            </div>
+
+
+            <!-- ============================
+                 CARD 4 - DECRYPT FILE
+            ============================= -->
+
+            <div class="security-card">
+
+                <div class="card-icon">
+                    🔓
+                </div>
+
+                <h3>
+                    Decrypt File
+                </h3>
+
+                <p>
+                    Restore your original file using
+                    the correct decryption password.
+                </p>
+
+                <button
+                    class="action-btn"
+                    onclick="decryptFilePage()">
+
+                    Decrypt File
+
+                </button>
+
+            </div>
+
+
+        </section>
+
+
+        <!-- ================================
+             SECURITY INFORMATION
+        ================================= -->
+
+        <section class="security-info">
+
+            <h3>
+                🛡️ CipherSafe Security
+            </h3>
+
+            <div class="security-points">
+
+
+                <div class="security-point">
+
+                    <span class="point-icon">
+                        🔒
+                    </span>
+
+                    <span>
+                        Data Encryption
+                    </span>
+
+                </div>
+
+
+                <div class="security-point">
+
+                    <span class="point-icon">
+                        🔑
+                    </span>
+
+                    <span>
+                        Secure Access
+                    </span>
+
+                </div>
+
+
+                <div class="security-point">
+
+                    <span class="point-icon">
+                        🛡️
+                    </span>
+
+                    <span>
+                        Data Protection
+                    </span>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+    </div>
+
+
+    <!-- ================================
+         JAVASCRIPT
+    ================================= -->
+
+    <script>
+
+
+        // =================================
+        // DISPLAY LOGGED-IN USERNAME
+        // =================================
+
+        const username =
+            localStorage.getItem("loggedInUser");
+
+
+        if (username) {
+
+            document.getElementById(
+                "usernameDisplay"
+            ).textContent = username;
+
+        }
+
+
+        // =================================
+        // SECURE FILE
+        // =================================
+
+        function secureFile() {
+
+            window.location.href =
+                "file.html";
+
+        }
+
+
+        // =================================
+        // SECURE MESSAGE
+        // =================================
+
+        function secureMessage() {
+
+            window.location.href =
+                "message.html";
+
+        }
+
+
+        // =================================
+        // DECRYPT MESSAGE
+        // =================================
+
+        function decryptMessagePage() {
+
+            window.location.href =
+                "decrypt.html";
+
+        }
+
+
+        // =================================
+        // DECRYPT FILE
+        // =================================
+
+        function decryptFilePage() {
+
+            window.location.href =
+                "file-decrypt.html";
+
+        }
+
+
+        // =================================
+        // LOGOUT
+        // =================================
+
+        function logout() {
+
+            localStorage.removeItem(
+                "loggedInUser"
+            );
+
+            window.location.href =
+                "index.html";
+
+        }
+
+
+    </script>
+    
+    <script src="crypto.js"></script>
+
+    <script>
+    async function testCipherSafe() {
+        console.log("Starting CipherSafe encryption test...");
+
+        const originalMessage = "Hello from CipherSafe!";
+        const password = "MySecurePassword123!";
+
+        try {
+        // Test 1: Encrypt the message
+            const encryptedPackage = await encryptData(
+                originalMessage,
+                password
+            );
+
+            console.log("1. Encryption successful:", true);
+            console.log("Encrypted package:", encryptedPackage);
+
+        // Test 2: Decrypt with the correct password
+            const decryptedBuffer = await decryptData(
+                encryptedPackage,
+                password
+            );
+
+            const decryptedMessage = new TextDecoder().decode(
+                decryptedBuffer
+            );
+
+            console.log(
+                "2. Correct password test:",
+                decryptedMessage === originalMessage
+            );
+
+            console.log("Decrypted message:", decryptedMessage);
+
+        // Test 3: Try the wrong password
+            try {
+                await decryptData(
+                    encryptedPackage,
+                    "WrongPassword123!"
+                );
+
+                console.error(
+                    "3. Wrong password test: FAILED"
+                );
+            } catch (error) {
+                console.log(
+                    "3. Wrong password rejected: PASS"
+                );
+            }
+
+        } catch (error) {
+            console.error("CipherSafe test failed:", error);
+        }
+    }
+
+    testCipherSafe();
+    </script>
+</body>
+
+</html>
+```

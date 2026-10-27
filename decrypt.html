@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CipherSafe | Decrypt Message</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- HEADER -->
+        <header class="dashboard-header">
+
+            <div class="brand">
+
+                <div class="brand-icon">🔐</div>
+
+                <div>
+                    <h1>CipherSafe</h1>
+                    <p>Secure. Encrypt. Protect.</p>
+                </div>
+
+            </div>
+
+            <button class="logout-btn" onclick="logout()">
+                Logout
+            </button>
+
+        </header>
+
+
+        <!-- BACK BUTTON -->
+        <div class="back-section">
+
+            <button class="back-btn" onclick="goBack()">
+                ← Back to Dashboard
+            </button>
+
+        </div>
+
+
+        <!-- DECRYPT PAGE -->
+        <div class="message-page">
+
+            <div class="message-card">
+
+                <div class="large-icon">
+                    🔓
+                </div>
+
+                <h2>Decrypt Your Message</h2>
+
+                <p class="page-description">
+                    Enter the encrypted message and the
+                    correct password to recover the original message.
+                </p>
+
+
+                <!-- ENCRYPTED MESSAGE -->
+
+                <div class="message-section">
+
+                    <label for="encryptedInput">
+                        🔐 Encrypted Message
+                    </label>
+
+                    <textarea
+                        id="encryptedInput"
+                        placeholder="Paste your encrypted JSON here..."
+                        rows="9"
+                    ></textarea>
+
+                </div>
+
+
+                <!-- PASSWORD -->
+
+                <div class="key-section">
+
+                    <label for="decryptKey">
+                        🔑 Decryption Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="decryptKey"
+                        placeholder="Enter your encryption password"
+                    >
+
+                    <small>
+                        Enter the same password that was used
+                        during encryption.
+                    </small>
+
+                </div>
+
+
+                <!-- DECRYPT BUTTON -->
+
+                <button
+                    class="primary-btn encrypt-btn"
+                    id="decryptBtn">
+
+                    🔓 Decrypt Message
+
+                </button>
+
+
+                <!-- STATUS -->
+
+                <div
+                    id="decryptStatus"
+                    class="status-message">
+                </div>
+
+
+                <!-- ORIGINAL MESSAGE -->
+
+                <div
+                    id="originalSection"
+                    class="encrypted-section"
+                    style="display: none;">
+
+                    <label>
+                        📝 Original Message
+                    </label>
+
+                    <textarea
+                        id="originalMessage"
+                        rows="7"
+                        readonly
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="crypto.js"></script>
+
+    <script>
+
+        /* ==========================================
+           ELEMENTS
+        ========================================== */
+
+        const encryptedInput =
+            document.getElementById("encryptedInput");
+
+        const decryptKey =
+            document.getElementById("decryptKey");
+
+        const decryptBtn =
+            document.getElementById("decryptBtn");
+
+        const decryptStatus =
+            document.getElementById("decryptStatus");
+
+        const originalSection =
+            document.getElementById("originalSection");
+
+        const originalMessage =
+            document.getElementById("originalMessage");
+
+
+        /* ==========================================
+           BASE64 → ARRAY BUFFER
+        ========================================== */
+
+        function base64ToArrayBuffer(base64) {
+
+            const binary =
+                atob(base64);
+
+            const bytes =
+                new Uint8Array(binary.length);
+
+
+            for (let i = 0; i < binary.length; i++) {
+
+                bytes[i] =
+                    binary.charCodeAt(i);
+
+            }
+
+
+            return bytes;
+
+        }
+
+
+        /* ==========================================
+           AES-256-GCM DECRYPTION
+        ========================================== */
+
+        /* ==========================================
+   AES-256-GCM DECRYPTION
+   Uses the shared crypto.js module
+========================================== */
+
+        async function decryptMessage(encryptedPackage, password) {
+            const decryptedData = await decryptData(
+                encryptedPackage,
+                password
+            );
+
+            return new TextDecoder().decode(decryptedData);
+       }
+
+
+        /* ==========================================
+           DECRYPT BUTTON
+        ========================================== */
+
+        decryptBtn.addEventListener(
+            "click",
+            async function() {
+
+                const encryptedText =
+                    encryptedInput.value.trim();
+
+                const password =
+                    decryptKey.value;
+
+
+                /* Check encrypted message */
+
+                if (encryptedText === "") {
+
+                    decryptStatus.textContent =
+                        "Please enter the encrypted message.";
+
+                    decryptStatus.className =
+                        "status-message error";
+
+                    originalSection.style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                /* Check password */
+
+                if (password === "") {
+
+                    decryptStatus.textContent =
+                        "Please enter the decryption password.";
+
+                    decryptStatus.className =
+                        "status-message error";
+
+                    originalSection.style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                try {
+
+                    decryptBtn.disabled = true;
+
+                    decryptBtn.textContent =
+                        "🔄 Decrypting...";
+
+
+                    /* Convert JSON string to object */
+
+                    const encryptedPackage =
+                        JSON.parse(encryptedText);
+
+
+                    /* Check algorithm */
+
+                    if (
+                        encryptedPackage.algorithm !== "AES-GCM" ||
+                        encryptedPackage.keyLength !== 256 ||
+                        encryptedPackage.hash !== "SHA-256" ||
+                        !encryptedPackage.ciphertext
+                    ) {
+
+                        throw new Error(
+                            "Invalid encryption format."
+                        );
+
+                    }
+
+
+                    /* Perform AES-256-GCM decryption */
+
+                    const decrypted =
+                        await decryptMessage(
+                            encryptedPackage,
+                            password
+                        );
+
+
+                    /* Display original message */
+
+                    originalMessage.value =
+                        decrypted;
+
+
+                    originalSection.style.display =
+                        "block";
+
+
+                    decryptStatus.textContent =
+                        "✓ Message decrypted successfully.";
+
+                    decryptStatus.className =
+                        "status-message success";
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    originalSection.style.display =
+                        "none";
+
+
+                    decryptStatus.textContent =
+                        "❌ Decryption failed. Check your password or encrypted message.";
+
+                    decryptStatus.className =
+                        "status-message error";
+
+                }
+
+
+                decryptBtn.disabled = false;
+
+                decryptBtn.textContent =
+                    "🔓 Decrypt Message";
+
+            }
+        );
+
+
+        /* ==========================================
+           BACK TO DASHBOARD
+        ========================================== */
+
+        function goBack() {
+
+            window.location.href =
+                "dashboard.html";
+
+        }
+
+
+        /* ==========================================
+           LOGOUT
+        ========================================== */
+
+        function logout() {
+
+            localStorage.removeItem(
+                "loggedInUser"
+            );
+
+            window.location.href =
+                "index.html";
+
+        }
+
+    </script>
+
+</body>
+
+</html>

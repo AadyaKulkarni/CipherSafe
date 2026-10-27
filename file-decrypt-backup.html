@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CipherSafe | Decrypt File</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- HEADER -->
+        <header class="dashboard-header">
+
+            <div class="brand">
+
+                <div class="brand-icon">🔐</div>
+
+                <div>
+                    <h1>CipherSafe</h1>
+                    <p>Secure. Encrypt. Protect.</p>
+                </div>
+
+            </div>
+
+            <button class="logout-btn" onclick="logout()">
+                Logout
+            </button>
+
+        </header>
+
+
+        <!-- BACK BUTTON -->
+        <div class="back-section">
+
+            <button class="back-btn" onclick="goBack()">
+                ← Back to Dashboard
+            </button>
+
+        </div>
+
+
+        <!-- MAIN PAGE -->
+        <div class="file-page">
+
+            <div class="file-card">
+
+                <div class="large-icon">
+                    🔓
+                </div>
+
+                <h2>Decrypt Your File</h2>
+
+                <p class="page-description">
+                    Restore your original file using
+                    AES-256-GCM decryption.
+                </p>
+
+
+                <!-- FILE UPLOAD -->
+
+                <div class="upload-area">
+
+                    <div class="upload-icon">
+                        📥
+                    </div>
+
+                    <h3>Select Encrypted File</h3>
+
+                    <p>
+                        Upload the CipherSafe encrypted
+                        JSON file.
+                    </p>
+
+                    <label
+                        for="encryptedFileInput"
+                        class="choose-btn">
+
+                        Choose Encrypted File
+
+                    </label>
+
+                    <input
+                        type="file"
+                        id="encryptedFileInput"
+                        accept=".json"
+                        hidden
+                    >
+
+                    <p
+                        id="encryptedFileName"
+                        class="file-name">
+
+                        No file selected
+
+                    </p>
+
+                </div>
+
+
+                <!-- PASSWORD -->
+
+                <div class="key-section">
+
+                    <label for="decryptionKey">
+                        🔑 Decryption Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="decryptionKey"
+                        placeholder="Enter your encryption password"
+                    >
+
+                    <small>
+                        Enter the same password that was
+                        used during encryption.
+                    </small>
+
+                </div>
+
+
+                <!-- DECRYPT BUTTON -->
+
+                <button
+                    class="primary-btn encrypt-btn"
+                    id="decryptFileBtn">
+
+                    🔓 Decrypt File
+
+                </button>
+
+
+                <!-- STATUS -->
+
+                <div
+                    id="fileStatus"
+                    class="status-message">
+
+                </div>
+
+
+                <!-- DOWNLOAD ORIGINAL FILE -->
+
+                <button
+                    class="download-btn"
+                    id="downloadOriginalBtn"
+                    style="display: none;">
+
+                    ⬇️ Download Original File
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        /* ==========================================
+           ELEMENTS
+        ========================================== */
+
+        const encryptedFileInput =
+            document.getElementById(
+                "encryptedFileInput"
+            );
+
+        const encryptedFileName =
+            document.getElementById(
+                "encryptedFileName"
+            );
+
+        const decryptionKey =
+            document.getElementById(
+                "decryptionKey"
+            );
+
+        const decryptFileBtn =
+            document.getElementById(
+                "decryptFileBtn"
+            );
+
+        const fileStatus =
+            document.getElementById(
+                "fileStatus"
+            );
+
+        const downloadOriginalBtn =
+            document.getElementById(
+                "downloadOriginalBtn"
+            );
+
+
+        /* ==========================================
+           GLOBAL ORIGINAL FILE
+        ========================================== */
+
+        let originalFileBlob = null;
+
+        let originalFileName =
+            "decrypted-file";
+
+        let originalFileType =
+            "application/octet-stream";
+
+
+        /* ==========================================
+           SHOW SELECTED FILE
+        ========================================== */
+
+        encryptedFileInput.addEventListener(
+            "change",
+            function() {
+
+                if (
+                    encryptedFileInput.files.length === 0
+                ) {
+
+                    encryptedFileName.textContent =
+                        "No file selected";
+
+                    return;
+
+                }
+
+
+                const file =
+                    encryptedFileInput.files[0];
+
+
+                encryptedFileName.textContent =
+                    "Selected: " + file.name;
+
+
+                fileStatus.textContent = "";
+
+                downloadOriginalBtn.style.display =
+                    "none";
+
+            }
+        );
+
+
+        /* ==========================================
+           BASE64 → ARRAY BUFFER
+        ========================================== */
+
+        function base64ToArrayBuffer(base64) {
+
+            const binary =
+                atob(base64);
+
+            const bytes =
+                new Uint8Array(
+                    binary.length
+                );
+
+
+            for (
+                let i = 0;
+                i < binary.length;
+                i++
+            ) {
+
+                bytes[i] =
+                    binary.charCodeAt(i);
+
+            }
+
+
+            return bytes;
+
+        }
+
+
+        /* ==========================================
+           AES-256-GCM FILE DECRYPTION
+        ========================================== */
+
+        async function decryptFile(
+            encryptedPackage,
+            password
+        ) {
+
+            const passwordBytes =
+                new TextEncoder().encode(
+                    password
+                );
+
+
+            /* Get salt */
+
+            const salt =
+                base64ToArrayBuffer(
+                    encryptedPackage.salt
+                );
+
+
+            /* Get IV */
+
+            const iv =
+                base64ToArrayBuffer(
+                    encryptedPackage.iv
+                );
+
+
+            /* Get encrypted data */
+
+            const encryptedData =
+                base64ToArrayBuffer(
+                    encryptedPackage.data
+                );
+
+
+            /* Import password */
+
+            const passwordKey =
+                await crypto.subtle.importKey(
+
+                    "raw",
+
+                    passwordBytes,
+
+                    "PBKDF2",
+
+                    false,
+
+                    ["deriveKey"]
+
+                );
+
+
+            /* Derive same AES-256 key */
+
+            const aesKey =
+                await crypto.subtle.deriveKey(
+
+                    {
+
+                        name: "PBKDF2",
+
+                        salt: salt,
+
+                        iterations:
+                            encryptedPackage.iterations,
+
+                        hash: "SHA-256"
+
+                    },
+
+                    passwordKey,
+
+                    {
+
+                        name: "AES-GCM",
+
+                        length: 256
+
+                    },
+
+                    false,
+
+                    ["decrypt"]
+
+                );
+
+
+            /* Decrypt */
+
+            const decryptedData =
+                await crypto.subtle.decrypt(
+
+                    {
+
+                        name: "AES-GCM",
+
+                        iv: iv
+
+                    },
+
+                    aesKey,
+
+                    encryptedData
+
+                );
+
+
+            return decryptedData;
+
+        }
+
+
+        /* ==========================================
+           DECRYPT BUTTON
+        ========================================== */
+
+        decryptFileBtn.addEventListener(
+            "click",
+            async function() {
+
+                /* Check file */
+
+                if (
+                    encryptedFileInput.files.length === 0
+                ) {
+
+                    fileStatus.textContent =
+                        "Please select an encrypted file first.";
+
+                    fileStatus.className =
+                        "status-message error";
+
+                    return;
+
+                }
+
+
+                /* Check password */
+
+                const password =
+                    decryptionKey.value;
+
+
+                if (password === "") {
+
+                    fileStatus.textContent =
+                        "Please enter the decryption password.";
+
+                    fileStatus.className =
+                        "status-message error";
+
+                    return;
+
+                }
+
+
+                try {
+
+                    decryptFileBtn.disabled = true;
+
+                    decryptFileBtn.textContent =
+                        "🔄 Decrypting...";
+
+
+                    /* Read encrypted JSON file */
+
+                    const encryptedFile =
+                        encryptedFileInput.files[0];
+
+
+                    const encryptedText =
+                        await encryptedFile.text();
+
+
+                    /* Convert JSON → Object */
+
+                    const encryptedPackage =
+                        JSON.parse(
+                            encryptedText
+                        );
+
+
+                    /* Validate encryption format */
+
+                    if (
+                        encryptedPackage.algorithm !==
+                        "AES-256-GCM"
+                    ) {
+
+                        throw new Error(
+                            "Invalid CipherSafe file."
+                        );
+
+                    }
+
+
+                    if (
+                        !encryptedPackage.salt ||
+                        !encryptedPackage.iv ||
+                        !encryptedPackage.data
+                    ) {
+
+                        throw new Error(
+                            "Encrypted file is incomplete."
+                        );
+
+                    }
+
+
+                    /* Decrypt */
+
+                    const decryptedData =
+                        await decryptFile(
+                            encryptedPackage,
+                            password
+                        );
+
+
+                    /*
+                     * Create original file Blob
+                     */
+
+                    originalFileBlob =
+                        new Blob(
+                            [decryptedData],
+                            {
+                                type:
+                                    encryptedPackage.originalFileType
+                            }
+                        );
+
+
+                    originalFileName =
+                        encryptedPackage.originalFileName ||
+                        "decrypted-file";
+
+
+                    originalFileType =
+                        encryptedPackage.originalFileType ||
+                        "application/octet-stream";
+
+
+                    /* Show download button */
+
+                    downloadOriginalBtn.style.display =
+                        "block";
+
+
+                    fileStatus.textContent =
+                        "✓ File decrypted successfully.";
+
+                    fileStatus.className =
+                        "status-message success";
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+
+                    originalFileBlob = null;
+
+
+                    downloadOriginalBtn.style.display =
+                        "none";
+
+
+                    fileStatus.textContent =
+                        "❌ Decryption failed. Check the password or encrypted file.";
+
+                    fileStatus.className =
+                        "status-message error";
+
+                }
+
+
+                decryptFileBtn.disabled = false;
+
+                decryptFileBtn.textContent =
+                    "🔓 Decrypt File";
+
+            }
+        );
+
+
+        /* ==========================================
+           DOWNLOAD ORIGINAL FILE
+        ========================================== */
+
+        downloadOriginalBtn.addEventListener(
+            "click",
+            function() {
+
+                if (!originalFileBlob) {
+
+                    return;
+
+                }
+
+
+                const url =
+                    URL.createObjectURL(
+                        originalFileBlob
+                    );
+
+
+                const link =
+                    document.createElement("a");
+
+
+                link.href = url;
+
+                link.download =
+                    originalFileName;
+
+
+                document.body.appendChild(link);
+
+                link.click();
+
+                document.body.removeChild(link);
+
+
+                URL.revokeObjectURL(url);
+
+            }
+        );
+
+
+        /* ==========================================
+           BACK TO DASHBOARD
+        ========================================== */
+
+        function goBack() {
+
+            window.location.href =
+                "dashboard.html";
+
+        }
+
+
+        /* ==========================================
+           LOGOUT
+        ========================================== */
+
+        function logout() {
+
+            localStorage.removeItem(
+                "loggedInUser"
+            );
+
+            window.location.href =
+                "index.html";
+
+        }
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CipherSafe | Secure File</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- HEADER -->
+        <header class="dashboard-header">
+
+            <div class="brand">
+
+                <div class="brand-icon">🔐</div>
+
+                <div>
+                    <h1>CipherSafe</h1>
+                    <p>Secure. Encrypt. Protect.</p>
+                </div>
+
+            </div>
+
+            <button class="logout-btn" onclick="logout()">
+                Logout
+            </button>
+
+        </header>
+
+
+        <!-- BACK BUTTON -->
+        <div class="back-section">
+
+            <button class="back-btn" onclick="goBack()">
+                ← Back to Dashboard
+            </button>
+
+        </div>
+
+
+        <!-- FILE PAGE -->
+        <div class="file-page">
+
+            <div class="file-card">
+
+                <div class="large-icon">
+                    📁
+                </div>
+
+                <h2>Secure Your File</h2>
+
+                <p class="page-description">
+                    Encrypt your file using
+                    AES-256-GCM cryptography.
+                </p>
+
+
+                <!-- FILE UPLOAD -->
+
+                <div class="upload-area">
+
+                    <div class="upload-icon">
+                        📤
+                    </div>
+
+                    <h3>Select Your File</h3>
+
+                    <p>
+                        Choose the file you want to encrypt
+                    </p>
+
+                    <label
+                        for="fileInput"
+                        class="choose-btn">
+
+                        Choose File
+
+                    </label>
+
+                    <input
+                        type="file"
+                        id="fileInput"
+                        hidden
+                    >
+
+                    <p
+                        id="fileName"
+                        class="file-name">
+
+                        No file selected
+
+                    </p>
+
+                </div>
+
+
+                <!-- ENCRYPTION PASSWORD -->
+
+                <div class="key-section">
+
+                    <label for="encryptionKey">
+                        🔑 Encryption Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="encryptionKey"
+                        placeholder="Enter encryption password"
+                    >
+
+                    <small>
+                        Remember this password.
+                        It is required to decrypt the file.
+                    </small>
+
+                </div>
+
+
+                <!-- ENCRYPT BUTTON -->
+
+                <button
+                    class="primary-btn encrypt-btn"
+                    id="encryptBtn">
+
+                    🔒 Encrypt File
+
+                </button>
+
+
+                <!-- STATUS -->
+
+                <div
+                    id="statusMessage"
+                    class="status-message">
+
+                </div>
+
+
+                <!-- DOWNLOAD -->
+
+                <button
+                    class="download-btn"
+                    id="downloadBtn"
+                    style="display: none;">
+
+                    ⬇️ Download Encrypted File
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="crypto.js"></script>
+
+    <script>
+
+        /* ==========================================
+           ELEMENTS
+        ========================================== */
+
+        const fileInput =
+            document.getElementById("fileInput");
+
+        const fileName =
+            document.getElementById("fileName");
+
+        const encryptionKey =
+            document.getElementById("encryptionKey");
+
+        const encryptBtn =
+            document.getElementById("encryptBtn");
+
+        const statusMessage =
+            document.getElementById("statusMessage");
+
+        const downloadBtn =
+            document.getElementById("downloadBtn");
+
+
+        /* ==========================================
+           GLOBAL ENCRYPTED DATA
+        ========================================== */
+
+        let encryptedFileBlob = null;
+
+
+        /* ==========================================
+           SHOW SELECTED FILE
+        ========================================== */
+
+        fileInput.addEventListener(
+            "change",
+            function() {
+
+                if (fileInput.files.length === 0) {
+
+                    fileName.textContent =
+                        "No file selected";
+
+                    return;
+                }
+
+
+                const file =
+                    fileInput.files[0];
+
+
+                fileName.textContent =
+                    "Selected: " + file.name;
+
+
+                statusMessage.textContent = "";
+
+                downloadBtn.style.display =
+                    "none";
+
+            }
+        );
+
+
+        /* ==========================================
+           ARRAY BUFFER → BASE64
+        ========================================== */
+
+        function arrayBufferToBase64(buffer) {
+
+            const bytes =
+                new Uint8Array(buffer);
+
+            let binary = "";
+
+            const chunkSize = 0x8000;
+
+
+            for (
+                let i = 0;
+                i < bytes.length;
+                i += chunkSize
+            ) {
+
+                const chunk =
+                    bytes.subarray(
+                        i,
+                        Math.min(
+                            i + chunkSize,
+                            bytes.length
+                        )
+                    );
+
+                binary += String.fromCharCode(
+                    ...chunk
+                );
+
+            }
+
+
+            return btoa(binary);
+
+        }
+
+
+        
+/* ==========================================
+   AES-256-GCM FILE ENCRYPTION
+   Uses the shared crypto.js module
+========================================== */
+
+        async function encryptFile(file, password) {
+    // Read the original file as binary data.
+            const fileData = await file.arrayBuffer();
+
+    // Encrypt the binary data using the shared module.
+            const encryptedResult = await encryptData(
+                fileData,
+                password
+            );
+
+           // Keep the original file information for restoration.
+            const encryptedPackage = {
+                ...encryptedResult,
+                keyDerivation: "PBKDF2-SHA-256",
+                originalFileName: file.name,
+                originalFileType:
+                    file.type || "application/octet-stream"
+            };
+
+            return JSON.stringify(encryptedPackage);
+        }
+
+
+        /* ==========================================
+           ENCRYPT BUTTON
+        ========================================== */
+
+        encryptBtn.addEventListener(
+            "click",
+            async function() {
+
+                /* Check file */
+
+                if (fileInput.files.length === 0) {
+
+                    statusMessage.textContent =
+                        "Please select a file first.";
+
+                    statusMessage.className =
+                        "status-message error";
+
+                    return;
+
+                }
+
+
+                /* Check password */
+
+                const password =
+                    encryptionKey.value;
+
+
+                if (password.length < 6) {
+
+                    statusMessage.textContent =
+                        "Encryption password must contain at least 6 characters.";
+
+                    statusMessage.className =
+                        "status-message error";
+
+                    return;
+
+                }
+
+
+                try {
+
+                    encryptBtn.disabled = true;
+
+                    encryptBtn.textContent =
+                        "🔄 Encrypting...";
+
+
+                    const file =
+                        fileInput.files[0];
+
+
+                    /*
+                     * REAL AES-256-GCM
+                     */
+
+                    const encryptedJSON =
+                        await encryptFile(
+                            file,
+                            password
+                        );
+
+
+                    /*
+                     * Create downloadable Blob
+                     */
+
+                    encryptedFileBlob =
+                        new Blob(
+                            [encryptedJSON],
+                            {
+                                type:
+                                    "application/json"
+                            }
+                        );
+
+
+                    downloadBtn.style.display =
+                        "block";
+
+
+                    statusMessage.textContent =
+                        "✓ File encrypted successfully using AES-256-GCM.";
+
+                    statusMessage.className =
+                        "status-message success";
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    statusMessage.textContent =
+                        "❌ File encryption failed.";
+
+                    statusMessage.className =
+                        "status-message error";
+
+                }
+
+
+                encryptBtn.disabled = false;
+
+                encryptBtn.textContent =
+                    "🔒 Encrypt File";
+
+            }
+        );
+
+
+        /* ==========================================
+           DOWNLOAD ENCRYPTED FILE
+        ========================================== */
+
+        downloadBtn.addEventListener(
+            "click",
+            function() {
+
+                if (!encryptedFileBlob) {
+
+                    return;
+
+                }
+
+
+                const url =
+                    URL.createObjectURL(
+                        encryptedFileBlob
+                    );
+
+
+                const link =
+                    document.createElement("a");
+
+
+                link.href = url;
+
+                link.download =
+                    "ciphersafe-encrypted-file.json";
+
+
+                document.body.appendChild(link);
+
+                link.click();
+
+                document.body.removeChild(link);
+
+
+                URL.revokeObjectURL(url);
+
+            }
+        );
+
+
+        /* ==========================================
+           BACK TO DASHBOARD
+        ========================================== */
+
+        function goBack() {
+
+            window.location.href =
+                "dashboard.html";
+
+        }
+
+
+        /* ==========================================
+           LOGOUT
+        ========================================== */
+
+        function logout() {
+
+            localStorage.removeItem(
+                "loggedInUser"
+            );
+
+            window.location.href =
+                "index.html";
+
+        }
+
+    </script>
+
+</body>
+
+</html>

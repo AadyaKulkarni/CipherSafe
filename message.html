@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CipherSafe | Secure Message</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- HEADER -->
+        <header class="dashboard-header">
+
+            <div class="brand">
+
+                <div class="brand-icon">🔐</div>
+
+                <div>
+                    <h1>CipherSafe</h1>
+                    <p>Secure. Encrypt. Protect.</p>
+                </div>
+
+            </div>
+
+            <button class="logout-btn" onclick="logout()">
+                Logout
+            </button>
+
+        </header>
+
+
+        <!-- BACK BUTTON -->
+        <div class="back-section">
+
+            <button class="back-btn" onclick="goBack()">
+                ← Back to Dashboard
+            </button>
+
+        </div>
+
+
+        <!-- MESSAGE PAGE -->
+        <div class="message-page">
+
+            <div class="message-card">
+
+                <div class="large-icon">
+                    💬
+                </div>
+
+                <h2>Secure Your Message</h2>
+
+                <p class="page-description">
+                    Encrypt your confidential message using
+                    AES-256-GCM cryptography.
+                </p>
+
+
+                <!-- MESSAGE -->
+                <div class="message-section">
+
+                    <label for="message">
+                        📝 Enter Your Message
+                    </label>
+
+                    <textarea
+                        id="message"
+                        placeholder="Type your confidential message here..."
+                        rows="7"
+                    ></textarea>
+
+                    <div class="character-count">
+                        <span id="charCount">0</span> characters
+                    </div>
+
+                </div>
+
+
+                <!-- ENCRYPTION KEY -->
+                <div class="key-section">
+
+                    <label for="messageKey">
+                        🔑 Encryption Key
+                    </label>
+
+                    <input
+                        type="password"
+                        id="messageKey"
+                        placeholder="Enter your encryption password"
+                    >
+
+                    <small>
+                        Remember this password. It is required
+                        to decrypt the message.
+                    </small>
+
+                </div>
+
+
+                <!-- ENCRYPT BUTTON -->
+                <button
+                    class="primary-btn encrypt-btn"
+                    id="encryptMessageBtn">
+
+                    🔒 Encrypt Message
+
+                </button>
+
+
+                <!-- STATUS -->
+                <div
+                    id="messageStatus"
+                    class="status-message">
+                </div>
+
+
+                <!-- ENCRYPTED RESULT -->
+                <div
+                    id="encryptedSection"
+                    class="encrypted-section"
+                    style="display: none;">
+
+                    <label>
+                        🔐 AES-256 Encrypted Message
+                    </label>
+
+                    <textarea
+                        id="encryptedMessage"
+                        rows="8"
+                        readonly
+                    ></textarea>
+
+                    <button
+                        class="copy-btn"
+                        id="copyBtn">
+
+                        📋 Copy Encrypted Message
+
+                    </button>
+
+                    <button
+                        class="copy-btn"
+                        id="downloadBtn">
+
+                        ⬇️ Download Encrypted Message
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="crypto.js"></script>
+
+    <script>
+
+        /* ==========================================
+           ELEMENTS
+        ========================================== */
+
+        const messageInput =
+            document.getElementById("message");
+
+        const messageKey =
+            document.getElementById("messageKey");
+
+        const encryptMessageBtn =
+            document.getElementById("encryptMessageBtn");
+
+        const messageStatus =
+            document.getElementById("messageStatus");
+
+        const encryptedSection =
+            document.getElementById("encryptedSection");
+
+        const encryptedMessage =
+            document.getElementById("encryptedMessage");
+
+        const copyBtn =
+            document.getElementById("copyBtn");
+
+        const downloadBtn =
+            document.getElementById("downloadBtn");
+
+        const charCount =
+            document.getElementById("charCount");
+
+
+        /* ==========================================
+           CHARACTER COUNTER
+        ========================================== */
+
+        messageInput.addEventListener("input", function() {
+
+            charCount.textContent =
+                messageInput.value.length;
+
+        });
+
+
+        /* ==========================================
+           CONVERT ARRAY BUFFER TO BASE64
+        ========================================== */
+
+        function arrayBufferToBase64(buffer) {
+
+            const bytes =
+                new Uint8Array(buffer);
+
+            let binary = "";
+
+            for (let i = 0; i < bytes.length; i++) {
+
+                binary += String.fromCharCode(bytes[i]);
+
+            }
+
+            return btoa(binary);
+
+        }
+
+
+        /* ==========================================
+           AES-256-GCM ENCRYPTION
+        ========================================== */
+
+        
+/* ==========================================
+   AES-256-GCM ENCRYPTION
+   Uses the shared crypto.js module
+========================================== */
+
+    async function encryptMessage(message, password) {
+        return await encryptData(message, password);
+    }
+
+
+        /* ==========================================
+           ENCRYPT BUTTON
+        ========================================== */
+
+        encryptMessageBtn.addEventListener(
+            "click",
+            async function() {
+
+                const message =
+                    messageInput.value.trim();
+
+                const password =
+                    messageKey.value;
+
+
+                /* Check message */
+
+                if (message === "") {
+
+                    messageStatus.textContent =
+                        "Please enter a message.";
+
+                    messageStatus.className =
+                        "status-message error";
+
+                    encryptedSection.style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                /* Check password */
+
+                if (password.length < 6) {
+
+                    messageStatus.textContent =
+                        "Encryption password must contain at least 6 characters.";
+
+                    messageStatus.className =
+                        "status-message error";
+
+                    encryptedSection.style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                try {
+
+                    encryptMessageBtn.disabled = true;
+
+                    encryptMessageBtn.textContent =
+                        "🔄 Encrypting...";
+
+
+                    /*
+                     * REAL AES-256-GCM ENCRYPTION
+                     */
+
+                    const result =
+                        await encryptMessage(
+                            message,
+                            password
+                        );
+
+
+                    /*
+                     * Store everything required
+                     * for future decryption.
+                     */
+
+                    
+                    const encryptedPackage = {
+                        ...result,
+                        keyDerivation: "PBKDF2-SHA-256"
+                 };
+
+
+                    /*
+                     * Convert package into JSON
+                     */
+
+                    const output =
+                        JSON.stringify(
+                            encryptedPackage
+                        );
+
+
+                    encryptedMessage.value =
+                        output;
+
+
+                    encryptedSection.style.display =
+                        "block";
+
+
+                    messageStatus.textContent =
+                        "✓ Message encrypted successfully using AES-256-GCM.";
+
+                    messageStatus.className =
+                        "status-message success";
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    messageStatus.textContent =
+                        "Encryption failed. Please try again.";
+
+                    messageStatus.className =
+                        "status-message error";
+
+                }
+
+
+                encryptMessageBtn.disabled = false;
+
+                encryptMessageBtn.textContent =
+                    "🔒 Encrypt Message";
+
+            }
+        );
+
+
+        /* ==========================================
+           COPY ENCRYPTED MESSAGE
+        ========================================== */
+
+        copyBtn.addEventListener(
+            "click",
+            async function() {
+
+                try {
+
+                    await navigator.clipboard.writeText(
+                        encryptedMessage.value
+                    );
+
+                    copyBtn.textContent =
+                        "✓ Copied!";
+
+
+                    setTimeout(function() {
+
+                        copyBtn.textContent =
+                            "📋 Copy Encrypted Message";
+
+                    }, 2000);
+
+
+                } catch (error) {
+
+                    alert(
+                        "Unable to copy. Please select and copy the text manually."
+                    );
+
+                }
+
+            }
+        );
+
+
+        /* ==========================================
+           DOWNLOAD ENCRYPTED MESSAGE
+        ========================================== */
+
+        downloadBtn.addEventListener(
+            "click",
+            function() {
+
+                const encryptedData =
+                    encryptedMessage.value;
+
+
+                const blob =
+                    new Blob(
+                        [encryptedData],
+                        {
+                            type: "application/json"
+                        }
+                    );
+
+
+                const url =
+                    URL.createObjectURL(blob);
+
+
+                const link =
+                    document.createElement("a");
+
+
+                link.href = url;
+
+                link.download =
+                    "ciphersafe-encrypted-message.json";
+
+
+                link.click();
+
+
+                URL.revokeObjectURL(url);
+
+            }
+        );
+
+
+        /* ==========================================
+           BACK TO DASHBOARD
+        ========================================== */
+
+        function goBack() {
+
+            window.location.href =
+                "dashboard.html";
+
+        }
+
+
+        /* ==========================================
+           LOGOUT
+        ========================================== */
+
+        function logout() {
+
+            localStorage.removeItem(
+                "loggedInUser"
+            );
+
+            window.location.href =
+                "index.html";
+
+        }
+
+    </script>
+
+</body>
+
+</html>
