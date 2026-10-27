@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CipherSafe | Decrypt File</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- HEADER -->
+        <header class="dashboard-header">
+
+            <div class="brand">
+
+                <div class="brand-icon">🔐</div>
+
+                <div>
+                    <h1>CipherSafe</h1>
+                    <p>Secure. Encrypt. Protect.</p>
+                </div>
+
+            </div>
+
+            <button class="logout-btn" onclick="logout()">
+                Logout
+            </button>
+
+        </header>
+
+
+        <!-- BACK BUTTON -->
+        <div class="back-section">
+
+            <button class="back-btn" onclick="goBack()">
+                ← Back to Dashboard
+            </button>
+
+        </div>
+
+
+        <!-- MAIN PAGE -->
+        <div class="file-page">
+
+            <div class="file-card">
+
+                <div class="large-icon">
+                    🔓
+                </div>
+
+                <h2>Decrypt Your File</h2>
+
+                <p class="page-description">
+                    Restore your original file using
+                    AES-256-GCM decryption.
+                </p>
+
+
+                <!-- FILE UPLOAD -->
+
+                <div class="upload-area">
+
+                    <div class="upload-icon">
+                        📥
+                    </div>
+
+                    <h3>Select Encrypted File</h3>
+
+                    <p>
+                        Upload the CipherSafe encrypted
+                        JSON file.
+                    </p>
+
+                    <label
+                        for="encryptedFileInput"
+                        class="choose-btn">
+
+                        Choose Encrypted File
+
+                    </label>
+
+                    <input
+                        type="file"
+                        id="encryptedFileInput"
+                        accept=".json"
+                        hidden
+                    >
+
+                    <p
+                        id="encryptedFileName"
+                        class="file-name">
+
+                        No file selected
+
+                    </p>
+
+                </div>
+
+
+                <!-- PASSWORD -->
+
+                <div class="key-section">
+
+                    <label for="decryptionKey">
+                        🔑 Decryption Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="decryptionKey"
+                        placeholder="Enter your encryption password"
+                    >
+
+                    <small>
+                        Enter the same password that was
+                        used during encryption.
+                    </small>
+
+                </div>
+
+
+                <!-- DECRYPT BUTTON -->
+
+                <button
+                    class="primary-btn encrypt-btn"
+                    id="decryptFileBtn">
+
+                    🔓 Decrypt File
+
+                </button>
+
+
+                <!-- STATUS -->
+
+                <div
+                    id="fileStatus"
+                    class="status-message">
+
+                </div>
+
+
+                <!-- DOWNLOAD ORIGINAL FILE -->
+
+                <button
+                    class="download-btn"
+                    id="downloadOriginalBtn"
+                    style="display: none;">
+
+                    ⬇️ Download Original File
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="crypto.js"></script>
+    
+<script>
+    const encryptedFileInput =
+        document.getElementById("encryptedFileInput");
+
+    const encryptedFileName =
+        document.getElementById("encryptedFileName");
+
+    const decryptionKey =
+        document.getElementById("decryptionKey");
+
+    const decryptFileBtn =
+        document.getElementById("decryptFileBtn");
+
+    const fileStatus =
+        document.getElementById("fileStatus");
+
+    const downloadOriginalBtn =
+        document.getElementById("downloadOriginalBtn");
+
+    let originalFileBlob = null;
+    let originalFileName = "decrypted-file";
+    let originalFileType = "application/octet-stream";
+
+    // Display the selected encrypted file.
+    encryptedFileInput.addEventListener("change", () => {
+        originalFileBlob = null;
+        downloadOriginalBtn.style.display = "none";
+        fileStatus.textContent = "";
+
+        if (!encryptedFileInput.files.length) {
+            encryptedFileName.textContent = "No file selected";
+            return;
+        }
+
+        encryptedFileName.textContent =
+            "Selected: " + encryptedFileInput.files[0].name;
+    });
+
+    // Decrypt using the shared crypto.js module.
+    decryptFileBtn.addEventListener("click", async () => {
+        if (!encryptedFileInput.files.length) {
+            fileStatus.textContent =
+                "Please select an encrypted file first.";
+            fileStatus.className = "status-message error";
+            return;
+        }
+
+        const password = decryptionKey.value;
+
+        if (!password) {
+            fileStatus.textContent =
+                "Please enter the decryption password.";
+            fileStatus.className = "status-message error";
+            return;
+        }
+
+        try {
+            decryptFileBtn.disabled = true;
+            decryptFileBtn.textContent = "Decrypting...";
+            downloadOriginalBtn.style.display = "none";
+            originalFileBlob = null;
+
+            const file = encryptedFileInput.files[0];
+            const encryptedText = await file.text();
+            const encryptedPackage = JSON.parse(encryptedText);
+
+            // Validate the package created by file.html.
+            if (
+                !encryptedPackage ||
+                encryptedPackage.keyDerivation !== "PBKDF2-SHA-256" ||
+                typeof encryptedPackage.originalFileName !== "string" ||
+                typeof encryptedPackage.originalFileType !== "string"
+            ) {
+                throw new Error("Invalid CipherSafe file package.");
+            }
+
+            // crypto.js expects the ciphertext field, not data.
+            const decryptedData = await decryptData(
+                encryptedPackage,
+                password
+            );
+
+            originalFileName =
+                encryptedPackage.originalFileName || "decrypted-file";
+
+            originalFileType =
+                encryptedPackage.originalFileType ||
+                "application/octet-stream";
+
+            originalFileBlob = new Blob(
+                [decryptedData],
+                { type: originalFileType }
+            );
+
+            downloadOriginalBtn.style.display = "block";
+            fileStatus.textContent =
+                "File decrypted successfully using AES-256-GCM.";
+            fileStatus.className = "status-message success";
+
+        } catch (error) {
+            console.error("File decryption error:", error);
+
+            originalFileBlob = null;
+            downloadOriginalBtn.style.display = "none";
+
+            fileStatus.textContent =
+                "Decryption failed. Check the password and encrypted file.";
+            fileStatus.className = "status-message error";
+
+        } finally {
+            decryptFileBtn.disabled = false;
+            decryptFileBtn.textContent = "🔓 Decrypt File";
+        }
+    });
+
+    // Download the restored file.
+    downloadOriginalBtn.addEventListener("click", () => {
+        if (!originalFileBlob) return;
+
+        const url = URL.createObjectURL(originalFileBlob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = originalFileName;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
+    function goBack() {
+        window.location.href = "dashboard.html";
+    }
+
+    function logout() {
+        localStorage.removeItem("loggedInUser");
+        window.location.href = "index.html";
+    }
+</script>
+
+</body>
+
+</html>
