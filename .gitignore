@@ -1,0 +1,21 @@
+
+# Python virtual environments
+.venv/
+venv/
+**/.venv/
+**/venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Environment variables and secrets
+.env
+
+# SQLite database files
+*.db
+*.db-journal
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
