@@ -1,139 +1,66 @@
+
 const registerForm = document.getElementById("registerForm");
 
-registerForm.addEventListener("submit", function(event) {
-
+registerForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
-
-    const username =
-        document.getElementById("username").value.trim();
-
-    const email =
-        document.getElementById("email").value.trim();
-
-    const password =
-        document.getElementById("password").value;
-
-    const confirmPassword =
-        document.getElementById("confirmPassword").value;
-
-
-    const errorMessage =
-        document.getElementById("errorMessage");
-
-
-    // Clear previous error
+    const username = document.getElementById("username").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+    const errorMessage = document.getElementById("errorMessage");
 
     errorMessage.textContent = "";
 
-
-    // Check empty fields
-
-    if (
-        username === "" ||
-        email === "" ||
-        password === "" ||
-        confirmPassword === ""
-    ) {
-
-        errorMessage.textContent =
-            "Please fill in all fields.";
-
+    if (!username || !email || !password || !confirmPassword) {
+        errorMessage.textContent = "Please fill in all fields.";
         return;
     }
-
-
-    // Check username length
 
     if (username.length < 3) {
-
-        errorMessage.textContent =
-            "Username must contain at least 3 characters.";
-
+        errorMessage.textContent = "Username must contain at least 3 characters.";
         return;
     }
 
-
-    // Check password length
-
-    if (password.length < 6) {
-
-        errorMessage.textContent =
-            "Password must contain at least 6 characters.";
-
+    if (password.length < 8) {
+        errorMessage.textContent = "Password must contain at least 8 characters.";
         return;
     }
-
-
-    // Check password confirmation
 
     if (password !== confirmPassword) {
-
-        errorMessage.textContent =
-            "Passwords do not match.";
-
+        errorMessage.textContent = "Passwords do not match.";
         return;
     }
 
+    try {
+        const response = await fetch("http://127.0.0.1:8000/api/auth/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                password: password
+            })
+        });
 
-    // Check if an account already exists
+        const result = await response.json();
 
-    const existingUser =
-        localStorage.getItem("cipherSafeUser");
-
-
-    if (existingUser) {
-
-        const user = JSON.parse(existingUser);
-
-
-        if (user.username === username) {
-
+        if (!response.ok) {
             errorMessage.textContent =
-                "Username already exists.";
-
+                typeof result.detail === "string"
+                    ? result.detail
+                    : "Registration failed. Check your details and try again.";
             return;
         }
 
+        alert("Registration successful! Please log in.");
+        window.location.href = "index.html";
 
-        if (user.email === email) {
-
-            errorMessage.textContent =
-                "Email is already registered.";
-
-            return;
-        }
-
+    } catch (error) {
+        console.error("Registration request failed:", error);
+        errorMessage.textContent =
+            "Cannot connect to the server. Make sure the CipherSafe backend is running.";
     }
-
-
-    // Create user object
-
-    const user = {
-
-        username: username,
-
-        email: email,
-
-        password: password
-
-    };
-
-
-    // TEMPORARY FRONTEND STORAGE
-    // This will later be replaced by backend/database
-
-    localStorage.setItem(
-        "cipherSafeUser",
-        JSON.stringify(user)
-    );
-
-
-    alert("Registration successful!");
-
-
-    // Go to login page
-
-    window.location.href = "index.html";
-
 });

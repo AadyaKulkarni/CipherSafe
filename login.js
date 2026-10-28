@@ -1,82 +1,51 @@
+
 const loginForm = document.getElementById("loginForm");
 
-loginForm.addEventListener("submit", function(event) {
-
+loginForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
-    const username =
-        document.getElementById("username").value.trim();
-
-    const password =
-        document.getElementById("password").value;
-
-    const errorMessage =
-        document.getElementById("errorMessage");
-
-
-    // Clear previous error
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const errorMessage = document.getElementById("errorMessage");
 
     errorMessage.textContent = "";
 
-
-    // Check empty fields
-
     if (username === "" || password === "") {
-
-        errorMessage.textContent =
-            "Please enter username and password.";
-
+        errorMessage.textContent = "Please enter username and password.";
         return;
     }
 
+    try {
+        const response = await fetch("http://127.0.0.1:8000/api/auth/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
 
-    // Get registered user
+        const result = await response.json();
 
-    const savedUser =
-        localStorage.getItem("cipherSafeUser");
+        if (!response.ok) {
+            errorMessage.textContent =
+                typeof result.detail === "string"
+                    ? result.detail
+                    : "Login failed. Please check your details.";
+            return;
+        }
 
-
-    if (!savedUser) {
-
-        errorMessage.textContent =
-            "No account found. Please create an account first.";
-
-        return;
-    }
-
-
-    // Convert saved data back to object
-
-    const user = JSON.parse(savedUser);
-
-
-    // Check login details
-
-    if (
-        username === user.username &&
-        password === user.password
-    ) {
-
-        // Save currently logged-in user
-
-        localStorage.setItem(
-            "loggedInUser",
-            user.username
-        );
-
+        localStorage.setItem("loggedInUser", result.username);
 
         alert("Login successful!");
-
-
-        // Go to dashboard
-
         window.location.href = "dashboard.html";
 
-    } else {
+    } catch (error) {
+        console.error("Login request failed:", error);
 
         errorMessage.textContent =
-            "Incorrect username or password.";
-
+            "Cannot connect to the server. Make sure the CipherSafe backend is running.";
     }
-
 });
